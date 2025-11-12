@@ -133,7 +133,7 @@ export const DATA = {
       dates: "Sep 2025 - Present",
       active: true,
       description:
-        "Lightweight terminal-based chat that lets users create or join private rooms and talk in real time from the command line.",
+        "Lightweight terminal-based chat that lets users chat with anyone through short-lived rooms.",
       technologies: [
         "Go",
         "Bubbletea",
@@ -148,9 +148,8 @@ export const DATA = {
           icon: <Icons.github className="size-3" />,
         },
       ],
-      image: "/termchat.png",
-      video:
-        "",
+      image: "",
+      video: "/termchat.mp4",
     },
     {
       title: "Acadion",
