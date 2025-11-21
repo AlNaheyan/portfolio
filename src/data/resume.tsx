@@ -170,7 +170,7 @@ export const DATA = {
       links: [
         {
           type: "Website",
-          href: "https://ccny-cs-scheduler.vercel.app/",
+          href: "https://acadion.alnaheyan.me/",
           icon: <Icons.globe className="size-3" />,
         },
         {
