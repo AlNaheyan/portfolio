@@ -10,7 +10,7 @@ export const DATA = {
   description:
     "software engineer based in nyc. I love building things and making an impact.",
   summary:
-    "computer science student at The [City College of New York](/#education) who loves building things that solve real problems. Over the past few years, I’ve gone from tinkering with full-stack web development to landing swe internships at [Unadat and Pulp Internet](/#experience). I currently work at Fox Tech, where I help the finance tech team streamline tools and workflows. Outside of that, I’m usually experimenting with side projects [(Acadion, Pomly and etc)](/#projects), exploring distributed systems, or organizing small campus events that bring people together around tech and creativity.",
+    "computer science student at The [City College of New York](/#education) who loves building things that solve real problems. Over the past few years, I’ve gone from tinkering with full-stack web development to landing swe internships at [Unadat and Pulp Internet](/#experience). I recently worked at Fox Tech, where I helped the finance tech team streamline tools and workflows. Outside of that, I’m usually experimenting with side projects [(Acadion, termchat and etc)](/#projects), exploring distributed systems, or organizing small campus events that bring people together around tech and creativity.",
   avatarUrl: "/me.jpeg",
   skills: [
     "Go",
@@ -75,7 +75,7 @@ export const DATA = {
       title: "Technology Analyst Intern",
       logoUrl: "/foxtech.jpeg",
       start: "Sep 2025",
-      end: "Dec 2025",
+      end: "Nov 2025",
       description:
         "Researching and evaluating enterprise software tools to optimize finance workflows at Fox Corporation. Analyzing vendor data, testing integrations, and collaborating with cross-functional teams to identify scalable, tech-driven solutions for long-term efficiency.",
     },
@@ -153,11 +153,11 @@ export const DATA = {
     },
     {
       title: "Acadion",
-      href: "https://github.com/AlNaheyan/ccny_cs_scheduler",
+      href: "https://github.com/AlNaheyan/acadion",
       dates: "June 2025 - July 2025",
       active: true,
       description:
-        "Acadion helps CCNY CS students plan their next semester by browsing a complete, searchable course catalog and finding exactly the courses you need to graduate.",
+        "Acadion is a modern course planning platform designed for CCNY students to streamline their academic journey. Plan your next semester, track completed courses, and discover which courses you're eligible to take—all in one place.",
       technologies: [
         "Next.js",
         "Typescript",
@@ -175,7 +175,7 @@ export const DATA = {
         },
         {
           type: "Source",
-          href: "https://github.com/AlNaheyan/ccny_cs_scheduler",
+          href: "https://github.com/AlNaheyan/acadion",
           icon: <Icons.github className="size-3" />,
         },
       ],
