@@ -149,7 +149,7 @@ export const DATA = {
         },
       ],
       image: "",
-      video: "/termchat.mp4",
+      video: "/termchat-v1-demo.mp4",
     },
     {
       title: "Acadion",
