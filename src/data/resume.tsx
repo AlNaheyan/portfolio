@@ -139,9 +139,16 @@ export const DATA = {
         "Bubbletea",
         "Fly.io",
         "Docker",
-        "SQLite"
+        "SQLite",
+        "Next.js",
+        "TypeScript"
       ],
       links: [
+        {
+          type: "Website",
+          href: "https://termchat-web.vercel.app/",
+          icon: <Icons.globe className="size-3" />,
+        },
         {
           type: "Source",
           href: "https://github.com/AlNaheyan/termchat",
