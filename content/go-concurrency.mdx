@@ -1,0 +1,155 @@
+---
+title: "go concurrency"
+publishedAt: "2025-11-28"
+summary: "go lang?"
+---
+
+# TermChat, Goroutines, and Why Go's Concurrency Model Finally Clicked for Me
+
+I built **TermChat**, a terminal-first chat app with WebSockets, file uploads, and room-based presence. Shipping it finally made Go's concurrency story feel natural: goroutines, channels, and the `select` statement. This is a friendly walkthrough—no Go experience required—with real snippets from the codebase.
+
+## Go's Concurrency in a Nutshell
+
+- **Goroutines** are ultra-light background tasks. Imagine saying, "hey Go, please run this function on the side," and Go figures out the threads for you.
+- **Channels** are typed mailboxes. You put values in on one end, someone else pulls them out on the other. No shared-memory wrestling.
+- **`select`** is a control room: "whichever mailbox gets a message first, do that thing."
+
+You can spawn thousands of goroutines without thinking about threads or stacks. The mantra that helped me: *share memory by communicating; don't communicate by sharing memory*.
+
+## Wiring a Live Chat Room with Channels
+
+Each chat room in TermChat is driven by a single goroutine that owns the room state. Clients join/leave via channels; messages fan out through another channel. Because one goroutine owns the state, we avoid the usual "who holds the lock?" headaches—channels serialize the writes for us.
+
+```go
+// internal/server_room.go
+func (room *Room) run() {
+	for {
+		select {
+		case client := <-room.register:
+			room.mutex.Lock()
+			room.clients[client] = true
+			room.mutex.Unlock()
+		case client := <-room.unregister:
+			room.mutex.Lock()
+			if _, exists := room.clients[client]; exists {
+				delete(room.clients, client)
+				close(client.send)
+			}
+			room.mutex.Unlock()
+		case messagePayload := <-room.broadcast:
+			room.mutex.Lock()
+			for client := range room.clients {
+				select {
+				case client.send <- messagePayload:
+				default:
+					close(client.send)
+					delete(room.clients, client)
+				}
+			}
+			room.mutex.Unlock()
+		}
+	}
+}
+```
+
+What is happening here, in plain language:
+
+- `register` / `unregister` are the doorways in and out of the room.
+- `broadcast` is the loudspeaker for new chat messages.
+- The inner `select` with `default` is a kindness: if a terminal is too slow to keep up, we drop it instead of stalling everyone else.
+
+Because the loop never exits, this goroutine is the room's "event dispatcher." If the room empties, the hub tears it down:
+
+```go
+// internal/server_hub.go
+func (hub *Hub) getOrCreateRoom(key string) *Room {
+	hub.mutex.Lock()
+	defer hub.mutex.Unlock()
+	if room, exists := hub.rooms[key]; exists {
+		return room
+	}
+	room := newRoom(key)
+	hub.rooms[key] = room
+	go room.run() // spin up a goroutine per room
+	return room
+}
+```
+
+## Graceful Lifecycles with Contexts
+
+Spawning goroutines is easy; stopping them cleanly matters more. The HTTP/WebSocket server runs in the background and listens for a `context.Context` cancellation to shut down without yanking the rug out from under in-flight requests.
+
+```go
+// internal/app/server.go
+go func() {
+	if ctx == nil {
+		return
+	}
+	<-ctx.Done()
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_ = httpServer.Shutdown(shutdownCtx)
+}()
+```
+
+This pattern let me build a `ServerHandle` that callers can `Stop` or `Wait` on without leaking goroutines or dropping in-flight requests.
+
+## Channels Make Backpressure Explicit
+
+Channels gave me an obvious place to put backpressure logic. The `send` channel on each client is buffered, so a slow terminal won't block the whole room. If the buffer fills, the room drops that client:
+
+```go
+// internal/server_room.go (broadcast case)
+for client := range room.clients {
+	select {
+	case client.send <- messagePayload:
+	default:
+		close(client.send) // signal writePump to exit
+		delete(room.clients, client)
+	}
+}
+```
+
+This was simpler than locking shared queues or sprinkling condition variables around; the channel buffer size (`256` here) is the only knob I needed.
+
+## Streaming File Uploads with `io.Pipe`
+
+Concurrency isn't only for WebSockets. File uploads stream through a pipe so the HTTP request body can be produced on the fly while the client is still reading from disk. A goroutine writes the multipart payload into the pipe; the HTTP client reads it concurrently.
+
+```go
+// internal/client_api.go
+pr, pw := io.Pipe()
+writer := multipart.NewWriter(pw)
+
+// Write multipart form in goroutine
+go func() {
+	defer pw.Close()
+	defer writer.Close()
+	part, err := writer.CreateFormFile("file", filepath.Base(filePath))
+	if err != nil {
+		pw.CloseWithError(err)
+		return
+	}
+	_, _ = io.Copy(part, file)
+	writer.WriteField("room_key", roomKey)
+	writer.WriteField("username", username)
+}()
+
+req, _ := http.NewRequest("POST", baseURL+"/api/upload", pr)
+req.Header.Set("Content-Type", writer.FormDataContentType())
+```
+
+The goroutine producing data and the HTTP client consuming it overlap perfectly—no temp files, no extra buffers.
+
+## Patterns That Stuck
+
+- **One owner goroutine per piece of state.** Rooms own their member map; the hub owns the room map. This kept lock scope small and predictable.
+- **Channel shape communicates intent.** `chan []byte` is "broadcast payloads"; `chan *Client` is "membership changes". I found naming channels after the events they carry keeps call sites readable.
+- **Always design the shutdown path.** Pair every `go` with a plan for cancellation, like a context or a channel close.
+- **Prefer backpressure over blocking.** Small channel buffers plus `select` with `default` let you drop or degrade gracefully.
+
+## Why This Felt Powerful
+
+Coming from thread-per-connection servers, the Go model let me write linear-looking code that is still highly concurrent. Channels gave me a vocabulary for "what happens when" without a maze of locks. And because goroutines are cheap, I could happily spawn one per room, one per upload stream, and one for graceful shutdown without performance guilt.
+
+If you're on the fence about Go's concurrency: build something chatty. Watch how channels make the flow of data explicit, and how `select` becomes your routing table for events. It finally clicked for me when TermChat's rooms started breathing on their own, driven by a handful of goroutines and a few well-named channels. If you're new to Go, copy any snippet above into a `main.go`, run `go run .`, and sprinkle `fmt.Println` calls to see goroutines interleave—you'll feel the model in motion.
