@@ -6,7 +6,7 @@ summary: "go lang?"
 
 # TermChat, Goroutines, and Why Go's Concurrency Model Finally Clicked for Me
 
-I built **TermChat**, a terminal-first chat app with WebSockets, file uploads, and room-based presence. Shipping it finally made Go's concurrency story feel natural: goroutines, channels, and the `select` statement. This is a friendly walkthrough—no Go experience required—with real snippets from the codebase.
+I built **TermChat**, a terminal-first chat app with WebSockets, file uploads, and room-based presence. Shipping it finally made Go's concurrency story feel natural: goroutines, channels, and the `select` statement. This is a friendly walkthrough with real snippets from the codebase.
 
 ## Go's Concurrency in a Nutshell
 
@@ -77,7 +77,7 @@ func (hub *Hub) getOrCreateRoom(key string) *Room {
 
 ## Graceful Lifecycles with Contexts
 
-Spawning goroutines is easy; stopping them cleanly matters more. The HTTP/WebSocket server runs in the background and listens for a `context.Context` cancellation to shut down without yanking the rug out from under in-flight requests.
+Spawning goroutines is easy, stopping them cleanly matters more. The HTTP/WebSocket server runs in the background and listens for a `context.Context` cancellation to shut down without yanking the rug out from under in-flight requests.
 
 ```go
 // internal/app/server.go
@@ -152,4 +152,4 @@ The goroutine producing data and the HTTP client consuming it overlap perfectly�
 
 Coming from thread-per-connection servers, the Go model let me write linear-looking code that is still highly concurrent. Channels gave me a vocabulary for "what happens when" without a maze of locks. And because goroutines are cheap, I could happily spawn one per room, one per upload stream, and one for graceful shutdown without performance guilt.
 
-If you're on the fence about Go's concurrency: build something chatty. Watch how channels make the flow of data explicit, and how `select` becomes your routing table for events. It finally clicked for me when TermChat's rooms started breathing on their own, driven by a handful of goroutines and a few well-named channels. If you're new to Go, copy any snippet above into a `main.go`, run `go run .`, and sprinkle `fmt.Println` calls to see goroutines interleave—you'll feel the model in motion.
+If you're on the fence about Go's concurrency: build something chatty. Watch how channels make the flow of data explicit, and how `select` becomes your routing table for events. It finally clicked for me when TermChat's rooms started breathing on their own, driven by a handful of goroutines and a few well-named channels. If you're new to Go, copy any snippet above into a `main.go`, run `go run .`, and sprinkle `fmt.Println` calls to see goroutines interleave, you'll feel the model in motion.
